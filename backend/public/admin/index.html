@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quản trị - Đặt đồ ăn</title>
+<style>
+  :root { --ink:#1d1d1f; --muted:#6b6b72; --line:#e4e4e8; --bg:#f5f5f7; --card:#fff; --accent:#d62828; --ok:#2e7d4f; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--ink); }
+  button, input, select, textarea { font: inherit; }
+  .hidden { display:none !important; }
+
+  /* Đăng nhập */
+  #login { max-width:360px; margin:12vh auto; background:var(--card); padding:28px; border-radius:10px; border:1px solid var(--line); }
+  #login h1 { margin:0 0 4px; font-size:22px; }
+  #login p { margin:0 0 18px; color:var(--muted); font-size:14px; }
+
+  label { display:block; font-size:13px; color:var(--muted); margin:12px 0 4px; }
+  input, select, textarea { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  input:focus, select:focus, textarea:focus, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+  .btn { background:var(--accent); color:#fff; border:0; padding:9px 16px; border-radius:6px; cursor:pointer; }
+  .btn.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  .btn.small { padding:5px 10px; font-size:13px; }
+  .btn.danger { background:transparent; color:var(--accent); border:1px solid var(--accent); }
+  #login .btn { width:100%; margin-top:18px; }
+  .error { color:var(--accent); font-size:14px; margin-top:10px; min-height:18px; }
+
+  /* Khung chính */
+  header { display:flex; align-items:center; gap:20px; padding:12px 24px; background:var(--ink); color:#fff; flex-wrap:wrap; }
+  header h2 { margin:0; font-size:17px; margin-right:auto; }
+  nav { display:flex; gap:4px; }
+  nav button { background:transparent; color:#cfcfd4; border:0; padding:8px 14px; border-radius:6px; cursor:pointer; }
+  nav button.active { background:#fff; color:var(--ink); }
+  header .btn.ghost { color:#fff; border-color:#555; }
+  main { max-width:1100px; margin:24px auto; padding:0 16px; }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; }
+  .toolbar { display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .toolbar h3 { margin:0 auto 0 0; }
+  .scroll { overflow-x:auto; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { color:var(--muted); font-weight:500; }
+  td img { width:52px; height:40px; object-fit:cover; border-radius:4px; background:var(--bg); display:block; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:20px; font-size:12px; background:var(--bg); }
+  .tag.ok { background:#e3f2e9; color:var(--ok); }
+  .tag.off { background:#fde8e8; color:var(--accent); }
+  .num { text-align:right; white-space:nowrap; }
+  .actions { display:flex; gap:6px; justify-content:flex-end; }
+
+  .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-bottom:16px; }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px; }
+  .stat b { display:block; font-size:26px; margin-top:4px; }
+  .stat span { color:var(--muted); font-size:13px; }
+
+  dialog { border:0; border-radius:10px; padding:22px; width:min(480px, 92vw); }
+  dialog::backdrop { background:rgba(0,0,0,.4); }
+  dialog h3 { margin:0 0 4px; }
+  .row { display:flex; gap:12px; } .row > div { flex:1; }
+  .check { display:flex; align-items:center; gap:8px; margin-top:14px; font-size:14px; color:var(--ink); }
+  .check input { width:auto; }
+  .dialog-actions { display:flex; justify-content:flex-end; gap:8px; margin-top:20px; }
+  #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--ink); color:#fff; padding:10px 18px; border-radius:6px; font-size:14px; }
+</style>
+</head>
+<body>
+
+<section id="login">
+  <h1>Trang quản trị</h1>
+  <p>Đăng nhập bằng tài khoản admin.</p>
+  <label for="email">Email</label>
+  <input id="email" type="email" value="admin@gmail.com" autocomplete="username">
+  <label for="password">Mật khẩu</label>
+  <input id="password" type="password" value="admin123" autocomplete="current-password">
+  <button class="btn" id="loginBtn">Đăng nhập</button>
+  <div class="error" id="loginError"></div>
+</section>
+
+<div id="app" class="hidden">
+  <header>
+    <h2>Quản trị đặt đồ ăn</h2>
+    <nav>
+      <button data-tab="stats" class="active">Thống kê</button>
+      <button data-tab="products">Món ăn</button>
+      <button data-tab="orders">Đơn hàng</button>
+    </nav>
+    <button class="btn ghost small" id="logoutBtn">Đăng xuất</button>
+  </header>
+
+  <main>
+    <section id="tab-stats">
+      <div class="stats" id="statCards"></div>
+      <div class="panel"><h3 style="margin-top:0">Đơn hàng theo trạng thái</h3><div id="statusList"></div></div>
+    </section>
+
+    <section id="tab-products" class="hidden">
+      <div class="panel">
+        <div class="toolbar"><h3>Danh sách món</h3><button class="btn" id="addProduct">Thêm món</button></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Ảnh</th><th>Tên món</th><th>Danh mục</th><th class="num">Giá</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody id="productRows"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section id="tab-orders" class="hidden">
+      <div class="panel">
+        <div class="toolbar"><h3>Đơn hàng</h3><button class="btn ghost small" id="reloadOrders">Tải lại</button></div>
+        <div class="scroll"><table>
+          <thead><tr><th>Khách hàng</th><th>Món</th><th class="num">Tổng</th><th>Thanh toán</th><th>Trạng thái</th><th></th></tr></thead>
+          <tbody id="orderRows"></tbody>
+        </table></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<dialog id="productDialog">
+  <form method="dialog" id="productForm">
+    <h3 id="dialogTitle">Thêm món</h3>
+    <label for="pName">Tên món</label><input id="pName" required>
+    <div class="row">
+      <div><label for="pPrice">Giá (VNĐ)</label><input id="pPrice" type="number" min="0" step="1000" required></div>
+      <div><label for="pCategory">Danh mục</label><input id="pCategory" list="cats" required><datalist id="cats"></datalist></div>
+    </div>
+    <label for="pImage">Link ảnh</label><input id="pImage" placeholder="https://...">
+    <label for="pDesc">Mô tả</label><textarea id="pDesc" rows="3"></textarea>
+    <label class="check"><input type="checkbox" id="pAvailable" checked> Đang bán</label>
+    <div class="error" id="dialogError"></div>
+    <div class="dialog-actions">
+      <button type="button" class="btn ghost" id="cancelDialog">Hủy</button>
+      <button type="submit" class="btn">Lưu món</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" class="hidden"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const API = '/api';
+const money = (n) => (n || 0).toLocaleString('vi-VN') + 'đ';
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const STATUS = { pending:'Chờ xác nhận', confirmed:'Đã xác nhận', delivering:'Đang giao', done:'Hoàn thành', cancelled:'Đã hủy' };
+
+let token = localStorage.getItem('admin_token');
+let editingId = null;
+let products = [];
+
+async function api(path, method = 'GET', body) {
+  const res = await fetch(API + path, {
+    method,
+    headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: 'Bearer ' + token } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Có lỗi xảy ra');
+  return data;
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.remove('hidden');
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => t.classList.add('hidden'), 2200);
+}
+
+/* ---- Đăng nhập ---- */
+async function login() {
+  $('#loginError').textContent = '';
+  try {
+    const data = await api('/auth/login', 'POST', { email: $('#email').value, password: $('#password').value });
+    if (data.user.role !== 'admin') throw new Error('Tài khoản này không phải admin');
+    token = data.token; localStorage.setItem('admin_token', token);
+    showApp();
+  } catch (e) { $('#loginError').textContent = e.message; }
+}
+function logout() { token = null; localStorage.removeItem('admin_token'); location.reload(); }
+
+async function showApp() {
+  try { await api('/admin/stats'); } catch { return logout(); }
+  $('#login').classList.add('hidden'); $('#app').classList.remove('hidden');
+  loadStats();
+}
+
+/* ---- Tab ---- */
+document.querySelectorAll('nav button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('nav button').forEach((x) => x.classList.toggle('active', x === b));
+  ['stats', 'products', 'orders'].forEach((t) => $('#tab-' + t).classList.toggle('hidden', t !== b.dataset.tab));
+  ({ stats: loadStats, products: loadProducts, orders: loadOrders })[b.dataset.tab]();
+}));
+
+/* ---- Thống kê ---- */
+async function loadStats() {
+  const s = await api('/admin/stats');
+  $('#statCards').innerHTML = [
+    ['Doanh thu (đã thanh toán)', money(s.revenue)], ['Tổng đơn hàng', s.orders],
+    ['Món ăn', s.products], ['Khách hàng', s.users],
+  ].map(([l, v]) => `<div class="stat"><span>${l}</span><b>${esc(v)}</b></div>`).join('');
+  $('#statusList').innerHTML = Object.keys(STATUS).map((k) =>
+    `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${STATUS[k]}</span><b>${s.byStatus[k] || 0}</b></div>`).join('');
+}
+
+/* ---- Món ăn (CRUD) ---- */
+async function loadProducts() {
+  products = await api('/products?all=true');
+  $('#cats').innerHTML = [...new Set(products.map((p) => p.category))].map((c) => `<option value="${esc(c)}">`).join('');
+  $('#productRows').innerHTML = products.length ? products.map((p) => `
+    <tr>
+      <td>${p.image ? `<img src="${esc(p.image)}" alt="" loading="lazy">` : ''}</td>
+      <td>${esc(p.name)}</td><td>${esc(p.category)}</td><td class="num">${money(p.price)}</td>
+      <td><span class="tag ${p.available ? 'ok' : 'off'}">${p.available ? 'Đang bán' : 'Tạm ngưng'}</span></td>
+      <td><div class="actions">
+        <button class="btn ghost small" data-edit="${p._id}">Sửa</button>
+        <button class="btn danger small" data-del="${p._id}">Xóa</button>
+      </div></td>
+    </tr>`).join('') : '<tr><td colspan="6">Chưa có món nào. Bấm "Thêm món" để tạo món đầu tiên.</td></tr>';
+}
+$('#productRows').addEventListener('click', async (e) => {
+  const edit = e.target.dataset.edit, del = e.target.dataset.del;
+  if (edit) openDialog(products.find((p) => p._id === edit));
+  if (del && confirm('Xóa món này?')) {
+    try { await api('/products/' + del, 'DELETE'); toast('Đã xóa món'); loadProducts(); } catch (err) { toast(err.message); }
+  }
+});
+function openDialog(p) {
+  editingId = p ? p._id : null;
+  $('#dialogTitle').textContent = p ? 'Sửa món' : 'Thêm món';
+  $('#pName').value = p?.name || ''; $('#pPrice').value = p?.price ?? '';
+  $('#pCategory').value = p?.category || ''; $('#pImage').value = p?.image || '';
+  $('#pDesc').value = p?.description || ''; $('#pAvailable').checked = p ? p.available : true;
+  $('#dialogError').textContent = ''; $('#productDialog').showModal();
+}
+$('#addProduct').onclick = () => openDialog(null);
+$('#cancelDialog').onclick = () => $('#productDialog').close();
+$('#productForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = { name: $('#pName').value.trim(), price: Number($('#pPrice').value), category: $('#pCategory').value.trim(),
+    image: $('#pImage').value.trim(), description: $('#pDesc').value.trim(), available: $('#pAvailable').checked };
+  try {
+    await api(editingId ? '/products/' + editingId : '/products', editingId ? 'PUT' : 'POST', body);
+    $('#productDialog').close(); toast('Đã lưu món'); loadProducts();
+  } catch (err) { $('#dialogError').textContent = err.message; }
+});
+
+/* ---- Đơn hàng ---- */
+async function loadOrders() {
+  const orders = await api('/orders');
+  $('#orderRows').innerHTML = orders.length ? orders.map((o) => `
+    <tr>
+      <td>${esc(o.user?.name || '—')}<br><small style="color:var(--muted)">${esc(o.phone)} · ${esc(o.address)}</small></td>
+      <td>${o.items.map((i) => `${esc(i.name)} × ${i.qty}`).join('<br>')}</td>
+      <td class="num">${money(o.total)}</td>
+      <td>${o.paymentMethod}<br><span class="tag ${o.paymentStatus === 'paid' ? 'ok' : ''}">${o.paymentStatus === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}</span></td>
+      <td><select data-status="${o._id}">${Object.keys(STATUS).map((k) => `<option value="${k}" ${k === o.status ? 'selected' : ''}>${STATUS[k]}</option>`).join('')}</select></td>
+      <td><button class="btn danger small" data-delorder="${o._id}">Xóa</button></td>
+    </tr>`).join('') : '<tr><td colspan="6">Chưa có đơn hàng nào.</td></tr>';
+}
+$('#orderRows').addEventListener('change', async (e) => {
+  if (!e.target.dataset.status) return;
+  try { await api(`/orders/${e.target.dataset.status}/status`, 'PUT', { status: e.target.value }); toast('Đã cập nhật trạng thái'); }
+  catch (err) { toast(err.message); loadOrders(); }
+});
+$('#orderRows').addEventListener('click', async (e) => {
+  const id = e.target.dataset.delorder;
+  if (id && confirm('Xóa đơn này?')) { try { await api('/orders/' + id, 'DELETE'); toast('Đã xóa đơn'); loadOrders(); } catch (err) { toast(err.message); } }
+});
+$('#reloadOrders').onclick = loadOrders;
+
+$('#loginBtn').onclick = login;
+$('#password').addEventListener('keydown', (e) => e.key === 'Enter' && login());
+$('#logoutBtn').onclick = logout;
+if (token) showApp();
+</script>
+</body>
+</html>

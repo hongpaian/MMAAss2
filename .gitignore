@@ -31,3 +31,7 @@ yarn-error.*
 partner-code-part2/
 .claude/
 mobile-app/.claude/
+CLAUDE.md
+AGENTS.md
+mobile-app/CLAUDE.md
+mobile-app/AGENTS.md

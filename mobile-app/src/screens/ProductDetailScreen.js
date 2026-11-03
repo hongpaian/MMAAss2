@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import api, { errMsg } from '../api';
+import { useCart } from '../context/CartContext';
 import { Button, ErrorView, Loading } from '../components';
 import { colors, formatVND } from '../theme';
 
 export default function ProductDetailScreen({ route, navigation }) {
+  const { add } = useCart();
   const [product, setProduct] = useState(null);
   const [qty, setQty] = useState(1);
   const [error, setError] = useState('');
@@ -18,11 +20,12 @@ export default function ProductDetailScreen({ route, navigation }) {
   if (error) return <ErrorView message={error} onRetry={load} />;
   if (!product) return <Loading />;
 
-  const handleOrder = () => {
-    Alert.alert(
-      'Chọn món thành công',
-      `Đã chọn: ${qty} × ${product.name}\n(Chức năng Giỏ hàng & Đặt hàng đang được tích hợp bởi thành viên 2)`
-    );
+  const addToCart = () => {
+    add(product, qty);
+    Alert.alert('Đã thêm vào giỏ', `${qty} × ${product.name}`, [
+      { text: 'Tiếp tục chọn món', onPress: () => navigation.goBack() },
+      { text: 'Xem giỏ hàng', onPress: () => navigation.navigate('Tabs', { screen: 'Cart' }) },
+    ]);
   };
 
   return (
@@ -42,7 +45,7 @@ export default function ProductDetailScreen({ route, navigation }) {
           <Text style={s.qty}>{qty}</Text>
           <Text style={s.stepBtn} onPress={() => setQty(qty + 1)}>+</Text>
         </View>
-        <Button title={`Chọn món · ${formatVND(product.price * qty)}`} onPress={handleOrder} style={{ flex: 1 }} />
+        <Button title={`Thêm vào giỏ · ${formatVND(product.price * qty)}`} onPress={addToCart} style={{ flex: 1 }} />
       </View>
     </View>
   );

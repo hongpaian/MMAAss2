@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+backend/node_modules/
+mobile-app/node_modules/
+
+# Environment files
+.env
+*.env.local
+
+# Expo & Mobile
+.expo/
+mobile-app/.expo/
+dist/
+web-build/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# OS & Logs
+.DS_Store
+Thumbs.db
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# Backup & Partner part 2 (local only)
+partner-code-part2/
+.claude/
+mobile-app/.claude/
